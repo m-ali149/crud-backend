@@ -63,6 +63,7 @@
 // });
 
 
+
 const dotenv = require("dotenv");
 dotenv.config();
 const express = require("express");
@@ -114,7 +115,7 @@ mongoose
     console.log(`Database connected successfully`);
   })
   .catch((err) => {
-    console.error("DB CONNECTION ERROR:", err);
+    console.error("DB CONNECTION ERROR:", err.message);
   });
 
 // Define the User schema
@@ -177,16 +178,29 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Route to get a user by ID
 app.get("/user/:id", async (req, res) => {
-  const { id } = req.params;
-  const data = await userModel.findById(id);
-  res.send(data);
+  try {
+    const { id } = req.params;
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
 });
+
 // Route to delete a user by ID
 app.delete("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await userModel.findByIdAndDelete(id);
+    const deletedUser = await userModel.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.json({ message: `User with id ${id} has been deleted successfully` });
   } catch (error) {
     console.error("Error deleting user:", error);
@@ -213,6 +227,10 @@ app.patch("/users/:id", upload.single("avatar"), async (req, res) => {
       new: true,
     });
 
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     res.json(updatedUser);
   } catch (error) {
     console.error("Error updating user:", error);
@@ -224,6 +242,7 @@ app.patch("/users/:id", upload.single("avatar"), async (req, res) => {
 app.listen(port, () => {
   console.log(`Server is up and listening on port ${port}`);
 });
+
 
 /*
 Frontend/Testing Notes:
